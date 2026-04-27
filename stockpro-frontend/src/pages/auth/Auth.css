@@ -1,0 +1,51 @@
+body {
+  background-color: #f8f9fa;
+}
+
+.auth-card {
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  border-radius: 16px;
+  border: none;
+  overflow: hidden;
+}
+
+.auth-header-bg {
+  background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+  color: white;
+  border-bottom: none;
+}
+
+.input-icon-wrapper {
+  position: relative;
+}
+
+.input-icon-wrapper .icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #adb5bd;
+  width: 20px;
+  height: 20px;
+}
+
+.input-icon-wrapper .form-control {
+  padding-left: 45px;
+  border-radius: 8px;
+}
+
+.input-icon-wrapper .form-control:focus {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+}
+
+.btn-primary {
+  border-radius: 8px;
+  padding: 12px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3);
+}
