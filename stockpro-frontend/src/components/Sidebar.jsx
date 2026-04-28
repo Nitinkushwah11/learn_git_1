@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Box, Warehouse, ShoppingCart, Users, ArrowRightLeft, FileBarChart } from 'lucide-react';
+import { LayoutDashboard, Box, Warehouse, ShoppingCart, CreditCard, Users, ArrowRightLeft, FileBarChart } from 'lucide-react';
 import { authService } from '../services/authService';
 import '../layouts/Layout.css';
 
@@ -21,40 +21,45 @@ const Sidebar = () => {
       <ul className="nav flex-column mb-auto">
         <li className="nav-item">
           <NavLink to="/dashboard" className="nav-link" end>
-            <LayoutDashboard size={20} /> Dashboard
+            <LayoutDashboard size={20} /> <span className="nav-text">Dashboard</span>
           </NavLink>
         </li>
         <li className="nav-item">
           <NavLink to="/products" className="nav-link">
-            <Box size={20} /> Products
+            <Box size={20} /> <span className="nav-text">Products</span>
           </NavLink>
         </li>
         <li className="nav-item">
           <NavLink to="/warehouses" className="nav-link">
-            <Warehouse size={20} /> Warehouses
+            <Warehouse size={20} /> <span className="nav-text">Warehouses</span>
           </NavLink>
         </li>
         <li className="nav-item">
           <NavLink to="/purchases" className="nav-link">
-            <ShoppingCart size={20} /> Purchases
+            <ShoppingCart size={20} /> <span className="nav-text">Purchases</span>
+          </NavLink>
+        </li>
+        <li className="nav-item">
+          <NavLink to="/payments" className="nav-link">
+            <CreditCard size={20} /> <span className="nav-text">Payments</span>
           </NavLink>
         </li>
         <li className="nav-item">
           <NavLink to="/movements" className="nav-link">
-            <ArrowRightLeft size={20} /> Movements
+            <ArrowRightLeft size={20} /> <span className="nav-text">Movements</span>
           </NavLink>
         </li>
         {canAccessSuppliers && (
           <li className="nav-item">
             <NavLink to="/suppliers" className="nav-link">
-              <Users size={20} /> Suppliers
+              <Users size={20} /> <span className="nav-text">Suppliers</span>
             </NavLink>
           </li>
         )}
         {canAccessReports && (
           <li className="nav-item">
             <NavLink to="/reports" className="nav-link">
-              <FileBarChart size={20} /> Reports
+              <FileBarChart size={20} /> <span className="nav-text">Reports</span>
             </NavLink>
           </li>
         )}

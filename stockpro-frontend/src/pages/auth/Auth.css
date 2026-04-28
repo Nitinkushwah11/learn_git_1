@@ -7,6 +7,21 @@ body {
   border-radius: 16px;
   border: none;
   overflow: hidden;
+  width: 90vw;
+  max-width: 480px;
+}
+
+@media (min-width: 1400px) {
+  .auth-card {
+    max-width: 520px;
+  }
+}
+
+@media (max-width: 576px) {
+  .auth-card {
+    width: 95vw;
+    border-radius: 12px;
+  }
 }
 
 .auth-header-bg {

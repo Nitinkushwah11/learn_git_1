@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { User, Shield, Bell, History, Plus, Save, Key, Loader, CheckCircle, AlertCircle } from 'lucide-react';
+import { User, Shield, Bell, History, Plus, Save, Key, Loader, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { authService } from '../../services/authService';
 import { movementService } from '../../services/movementService';
 
@@ -39,6 +39,8 @@ const AdminSettingsPage = () => {
     phone: '',
     department: 'General'
   });
+  const [showPwd, setShowPwd] = useState(false);
+  const [showCreatePwd, setShowCreatePwd] = useState(false);
 
   React.useEffect(() => {
     if (activeTab === 'users') fetchUsers();
@@ -215,11 +217,33 @@ const AdminSettingsPage = () => {
                   <div className="row mb-4">
                     <div className="col-md-6">
                       <label className="form-label text-muted fw-semibold small text-uppercase">New Password</label>
-                      <input type="password" className="form-control" value={pwdForm.newPassword} onChange={e => setPwdForm({...pwdForm, newPassword: e.target.value})} placeholder="Enter new password" />
+                      <div className="input-group">
+                        <input 
+                          type={showPwd ? "text" : "password"} 
+                          className="form-control" 
+                          value={pwdForm.newPassword} 
+                          onChange={e => setPwdForm({...pwdForm, newPassword: e.target.value})} 
+                          placeholder="Enter new password" 
+                        />
+                        <button className="btn btn-outline-secondary" type="button" onClick={() => setShowPwd(!showPwd)}>
+                          {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
                     </div>
                     <div className="col-md-6">
                       <label className="form-label text-muted fw-semibold small text-uppercase">Confirm Password</label>
-                      <input type="password" className="form-control" value={pwdForm.confirmPassword} onChange={e => setPwdForm({...pwdForm, confirmPassword: e.target.value})} placeholder="Confirm new password" />
+                      <div className="input-group">
+                        <input 
+                          type={showPwd ? "text" : "password"} 
+                          className="form-control" 
+                          value={pwdForm.confirmPassword} 
+                          onChange={e => setPwdForm({...pwdForm, confirmPassword: e.target.value})} 
+                          placeholder="Confirm new password" 
+                        />
+                        <button className="btn btn-outline-secondary" type="button" onClick={() => setShowPwd(!showPwd)}>
+                          {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <div className="d-flex justify-content-end">
@@ -394,6 +418,18 @@ const AdminSettingsPage = () => {
                   <input type="email" className="form-control" required value={createUserForm.email} onChange={e => setCreateUserForm({...createUserForm, email: e.target.value})} />
                 </div>
                 <div className="mb-3">
+                  <label className="form-label text-muted fw-semibold small text-uppercase">Phone Number</label>
+                  <input 
+                    type="tel" 
+                    className="form-control" 
+                    required 
+                    placeholder="e.g. 9876543210"
+                    value={createUserForm.phone} 
+                    onChange={e => setCreateUserForm({...createUserForm, phone: e.target.value})}
+                    pattern="^[6-9]\d{9}$"
+                  />
+                </div>
+                <div className="mb-3">
                   <label className="form-label text-muted fw-semibold small text-uppercase">Role</label>
                   <select className="form-select" required value={createUserForm.role} onChange={e => setCreateUserForm({...createUserForm, role: e.target.value})}>
                     <option value="">Select a role</option>
@@ -404,8 +440,29 @@ const AdminSettingsPage = () => {
                   </select>
                 </div>
                 <div className="mb-3">
+                  <label className="form-label text-muted fw-semibold small text-uppercase">Department</label>
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    placeholder="e.g. Sales, Warehouse"
+                    value={createUserForm.department} 
+                    onChange={e => setCreateUserForm({...createUserForm, department: e.target.value})} 
+                  />
+                </div>
+                <div className="mb-3">
                   <label className="form-label text-muted fw-semibold small text-uppercase">Initial Password</label>
-                  <input type="password" className="form-control" required value={createUserForm.password} onChange={e => setCreateUserForm({...createUserForm, password: e.target.value})} />
+                  <div className="input-group">
+                    <input 
+                      type={showCreatePwd ? "text" : "password"} 
+                      className="form-control" 
+                      required 
+                      value={createUserForm.password} 
+                      onChange={e => setCreateUserForm({...createUserForm, password: e.target.value})} 
+                    />
+                    <button className="btn btn-outline-secondary" type="button" onClick={() => setShowCreatePwd(!showCreatePwd)}>
+                      {showCreatePwd ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>

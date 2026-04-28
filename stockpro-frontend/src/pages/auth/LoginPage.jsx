@@ -27,7 +27,7 @@ const LoginPage = () => {
 
   return (
     <div className="container d-flex justify-content-center align-items-center vh-100">
-      <div className="card auth-card w-100" style={{ maxWidth: '420px' }}>
+      <div className="card auth-card">
         <div className="card-header auth-header-bg text-center py-4">
           <h2 className="mb-0 fw-bold">StockPro</h2>
           <p className="mb-0 mt-2 opacity-75">Welcome back! Please login.</p>

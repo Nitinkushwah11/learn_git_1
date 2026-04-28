@@ -57,7 +57,17 @@ spring:
               predicates:
                 - Path=/purchase-orders/**
 
+            # Route 9: Payment Service
+            - id: payment-service
+              uri: lb://payment-service
+              predicates:
+                - Path=/payments/**
+
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
+
+jwt:
+  secret: myStockProSuperSecretKeyForJWTAuth2024!
+  expiration: 86400000

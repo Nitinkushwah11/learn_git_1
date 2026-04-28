@@ -15,6 +15,7 @@ const MovementsPage = lazy(() => import('./pages/movements/MovementsPage'));
 const SuppliersPage = lazy(() => import('./pages/suppliers/SuppliersPage'));
 const ReportsPage = lazy(() => import('./pages/reports/ReportsPage'));
 const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage'));
+const PaymentsPage = lazy(() => import('./pages/payments/PaymentsPage'));
 
 const FallbackLoader = () => (
   <div className="d-flex justify-content-center align-items-center vh-100">
@@ -26,15 +27,15 @@ const FallbackLoader = () => (
 
 function App() {
   return (
-    <div className="app-container">
+    <div class="app">
       <Suspense fallback={<FallbackLoader />}>
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" />} />
-          
+
           {/* Auth Routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          
+
           {/* Protected Dashboard Routes wrapped in MainLayout */}
           <Route element={<MainLayout />}>
             {/* Base Protected Route (All Authenticated Users) */}
@@ -45,6 +46,7 @@ function App() {
               <Route path="/products" element={<ProductsPage />} />
               <Route path="/warehouses" element={<WarehousesPage />} />
               <Route path="/purchases" element={<PurchasesPage />} />
+              <Route path="/payments" element={<PaymentsPage />} />
             </Route>
 
             {/* Restricted to Admin and Officer */}

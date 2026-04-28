@@ -35,6 +35,17 @@ public class AuthServiceImpl implements AuthService {
 
         // 2. Proceed with encoding and saving
         user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
+        
+        // Only set default role if not provided (allows Admin to specify roles)
+        if (user.getRole() == null || user.getRole().trim().isEmpty()) {
+            user.setRole("STAFF");
+        }
+        
+        // Only set default department if not provided
+        if (user.getDepartment() == null || user.getDepartment().trim().isEmpty()) {
+            user.setDepartment("General");
+        }
+        
         user.setCreatedAt(LocalDateTime.now());
         return repo.save(user);
     }

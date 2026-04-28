@@ -34,3 +34,4 @@ export const movementApi = apiClient;
 export const supplierApi = apiClient;
 export const reportApi = apiClient;
 export const alertApi = apiClient;
+export const paymentApi = apiClient;
