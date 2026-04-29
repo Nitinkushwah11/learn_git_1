@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Eye, X, Loader, Search, Package, ArrowRightLeft } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, X, Loader, Search, Package, ArrowRightLeft, Phone, User, MapPin, Building2, TrendingUp, BarChart3, AlertTriangle } from 'lucide-react';
 import { warehouseService } from '../../services/warehouseService';
+import { productService } from '../../services/productService';
 
 const WarehousesPage = () => {
   const [warehouses, setWarehouses] = useState([]);
@@ -24,7 +25,7 @@ const WarehousesPage = () => {
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [transfering, setTransfering] = useState(false);
   const [transferData, setTransferData] = useState({ fromWarehouseId: '', toWarehouseId: '', productId: '', quantity: 1 });
-  const [allProducts, setAllProducts] = useState([]); // For transfer dropdown
+  const [allProducts, setAllProducts] = useState([]); 
 
   // Delete
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -45,13 +46,26 @@ const WarehousesPage = () => {
       setError(null);
     } catch (err) {
       console.error('Error:', err);
-      setError('Failed to load warehouses. Make sure warehouse-service and api-gateway are running.');
+      setError('Failed to load warehouses. Make sure warehouse-service is running.');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchWarehouses(); }, []);
+  const fetchProducts = async () => {
+    try {
+      const data = await productService.getAllProducts();
+      setAllProducts(data);
+    } catch (err) {
+      console.error('Failed to load products:', err);
+    }
+  };
+
+  useEffect(() => { 
+    fetchWarehouses(); 
+    fetchProducts();
+  }, []);
+
   useEffect(() => {
     if (successMsg) { const t = setTimeout(() => setSuccessMsg(null), 4000); return () => clearTimeout(t); }
   }, [successMsg]);
@@ -61,19 +75,17 @@ const WarehousesPage = () => {
     const errors = {};
     if (!formData.name.trim()) errors.name = 'Name is required';
     if (!formData.location.trim()) errors.location = 'Location is required';
-    if (!formData.address.trim()) errors.address = 'Address is required';
     if (!formData.capacity || formData.capacity < 1) errors.capacity = 'Capacity must be > 0';
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handleInputChange = (e) => {
-    const { name, value, type } = e.target;
+    const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     if (formErrors[name]) setFormErrors(prev => ({ ...prev, [name]: null }));
   };
 
-  // Modal handlers
   const openAddModal = () => { setFormData(emptyForm); setFormErrors({}); setModalMode('add'); setShowModal(true); };
   const openEditModal = (wh) => {
     setFormData({ name: wh.name||'', location: wh.location||'', address: wh.address||'', managerId: wh.managerId||'', capacity: wh.capacity||'', phone: wh.phone||'' });
@@ -81,7 +93,6 @@ const WarehousesPage = () => {
   };
   const closeModal = () => { setShowModal(false); setSelectedWarehouse(null); setFormData(emptyForm); };
 
-  // View stock
   const openStockView = async (wh) => {
     setStockWarehouse(wh);
     setShowStockModal(true);
@@ -97,7 +108,6 @@ const WarehousesPage = () => {
     }
   };
 
-  // Save
   const handleSave = async () => {
     if (!validateForm()) return;
     setSaving(true);
@@ -112,22 +122,23 @@ const WarehousesPage = () => {
       closeModal();
       await fetchWarehouses();
     } catch (err) {
-      const msg = err.response?.data?.message || err.response?.data?.error || 'Failed to save.';
+      const msg = err.response?.data?.error || err.response?.data?.message || err.response?.data?.error || 'Failed to save.';
       setFormErrors({ _server: msg });
     } finally { setSaving(false); }
   };
 
-  // Transfer
   const openTransferModal = (fromWhId = '') => {
     setTransferData({ fromWarehouseId: fromWhId, toWarehouseId: '', productId: '', quantity: 1 });
     setShowTransferModal(true);
-    // Fetch products to populate dropdown if needed, but for now we'll assume user knows ID or we can fetch a list
-    // warehouseService.getLowStockItems().then(items => setAllProducts(items)); 
   };
 
   const handleTransfer = async () => {
     if (!transferData.fromWarehouseId || !transferData.toWarehouseId || !transferData.productId || transferData.quantity < 1) {
       alert('Please fill all transfer fields');
+      return;
+    }
+    if (transferData.fromWarehouseId === transferData.toWarehouseId) {
+      alert('Source and Destination warehouses must be different.');
       return;
     }
     setTransfering(true);
@@ -137,21 +148,22 @@ const WarehousesPage = () => {
       setShowTransferModal(false);
       await fetchWarehouses();
     } catch (err) {
-      alert(`Transfer failed: ${err.response?.data?.message || err.message}`);
+      const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message;
+      alert(`Transfer failed: ${errorMsg}`);
     } finally { setTransfering(false); }
   };
 
-  // Delete
   const handleDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
       await warehouseService.deleteWarehouse(deleteTarget.warehouseId);
-      setSuccessMsg(`Warehouse "${deleteTarget.name}" deleted.`);
+      setSuccessMsg(`Warehouse deleted.`);
       setShowDeleteModal(false); setDeleteTarget(null);
       await fetchWarehouses();
     } catch (err) {
-      setError(`Delete failed: ${err.response?.data?.message || err.message}`);
+      const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message;
+      setError(`Delete failed: ${errorMsg}`);
       setShowDeleteModal(false);
     } finally { setDeleting(false); }
   };
@@ -162,138 +174,189 @@ const WarehousesPage = () => {
   };
 
   const getUtilColor = (pct) => {
-    if (pct >= 90) return 'danger';
-    if (pct >= 70) return 'warning';
-    return 'primary';
+    if (pct >= 90) return 'text-danger';
+    if (pct >= 70) return 'text-warning';
+    return 'text-primary';
   };
 
-  // Form field helper
-  const renderField = (label, name, type = 'text', placeholder = '', required = false) => (
-    <div className="mb-3">
-      <label className="form-label small fw-bold text-secondary">
-        {label} {required && <span className="text-danger">*</span>}
-      </label>
-      <input type={type} className={`form-control ${formErrors[name] ? 'is-invalid' : ''}`}
-        name={name} value={formData[name]} onChange={handleInputChange} placeholder={placeholder}
-        step={type === 'number' ? '1' : undefined}
-      />
-      {formErrors[name] && <div className="invalid-feedback">{formErrors[name]}</div>}
-    </div>
-  );
+  const getUtilBg = (pct) => {
+    if (pct >= 90) return 'bg-danger';
+    if (pct >= 70) return 'bg-warning';
+    return 'bg-primary';
+  };
+
+  const getProductName = (id) => allProducts.find(p => p.productId == id)?.name || `PROD-${id}`;
 
   return (
-    <div>
-      {/* Header */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
+    <div className="p-4" style={{ backgroundColor: '#f8fafc', minHeight: '100vh' }}>
+      {/* Premium Header Section */}
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-5 gap-3">
         <div>
-          <h2 className="fw-bold mb-0">Warehouses</h2>
-          <p className="text-muted mb-0">
-            Manage storage locations and capacity.
-            {!loading && <span className="ms-1 text-primary fw-medium">({warehouses.length} locations)</span>}
-          </p>
+          <h1 className="fw-bold display-6 mb-1" style={{ color: '#1e293b' }}>Warehouses</h1>
+          <div className="d-flex align-items-center gap-2 text-muted">
+            <Building2 size={18} />
+            <span>Manage inventory distribution across {warehouses.length} locations</span>
+          </div>
         </div>
-        <div className="d-flex gap-2">
-          <button className="btn btn-outline-primary d-flex align-items-center gap-2 shadow-sm" onClick={() => openTransferModal()}>
-            <ArrowRightLeft size={18} /> Transfer Stock
+        <div className="d-flex gap-3">
+          <button className="btn btn-white shadow-sm border d-flex align-items-center gap-2 px-4 py-2" 
+            style={{ borderRadius: '12px', fontWeight: '600' }}
+            onClick={() => openTransferModal()}>
+            <ArrowRightLeft size={18} className="text-primary" /> Transfer Stock
           </button>
-          <button className="btn btn-primary d-flex align-items-center gap-2 shadow-sm" onClick={openAddModal}>
+          <button className="btn btn-primary shadow-sm d-flex align-items-center gap-2 px-4 py-2" 
+            style={{ borderRadius: '12px', fontWeight: '600', backgroundColor: '#4f46e5', border: 'none' }}
+            onClick={openAddModal}>
             <Plus size={18} /> Register Warehouse
           </button>
         </div>
       </div>
 
-      {/* Alerts */}
-      {successMsg && (
-        <div className="alert alert-success border-0 shadow-sm mb-4 d-flex justify-content-between align-items-center">
-          <div className="d-flex align-items-center gap-2">
-            <span className="material-symbols-outlined text-success">check_circle</span>{successMsg}
+      {/* Quick Stats Banner */}
+      {!loading && warehouses.length > 0 && (
+        <div className="row g-4 mb-5">
+          <div className="col-md-4">
+            <div className="card border-0 shadow-sm p-3" style={{ borderRadius: '16px' }}>
+              <div className="d-flex align-items-center gap-3">
+                <div className="p-3 rounded-4 bg-primary-subtle text-primary">
+                  <BarChart3 size={24} />
+                </div>
+                <div>
+                  <div className="small text-muted fw-bold text-uppercase">Total Capacity</div>
+                  <div className="h4 mb-0 fw-bold">{warehouses.reduce((acc, w) => acc + (w.capacity || 0), 0).toLocaleString()} units</div>
+                </div>
+              </div>
+            </div>
           </div>
-          <button className="btn btn-sm btn-close" onClick={() => setSuccessMsg(null)}></button>
-        </div>
-      )}
-      {error && (
-        <div className="alert alert-danger border-0 shadow-sm mb-4 d-flex justify-content-between align-items-center">
-          <div>{error}</div>
-          <button className="btn btn-sm btn-close" onClick={() => setError(null)}></button>
+          <div className="col-md-4">
+            <div className="card border-0 shadow-sm p-3" style={{ borderRadius: '16px' }}>
+              <div className="d-flex align-items-center gap-3">
+                <div className="p-3 rounded-4 bg-success-subtle text-success">
+                  <TrendingUp size={24} />
+                </div>
+                <div>
+                  <div className="small text-muted fw-bold text-uppercase">Overall Utilization</div>
+                  <div className="h4 mb-0 fw-bold">
+                    {Math.round((warehouses.reduce((acc, w) => acc + (w.usedCapacity || 0), 0) / 
+                     warehouses.reduce((acc, w) => acc + (w.capacity || 1), 0)) * 100)}%
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-4">
+            <div className="card border-0 shadow-sm p-3" style={{ borderRadius: '16px' }}>
+              <div className="d-flex align-items-center gap-3">
+                <div className="p-3 rounded-4 bg-warning-subtle text-warning">
+                  <AlertTriangle size={24} />
+                </div>
+                <div>
+                  <div className="small text-muted fw-bold text-uppercase">High Capacity</div>
+                  <div className="h4 mb-0 fw-bold">{warehouses.filter(w => getUtilization(w) > 80).length} Locations</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Loading */}
+      {/* Success/Error Alerts */}
+      {successMsg && (
+        <div className="alert alert-success border-0 shadow-sm mb-4 fade show d-flex align-items-center gap-2 py-3 px-4" 
+          style={{ borderRadius: '12px', borderLeft: '4px solid #10b981' }}>
+          <div className="p-2 bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
+            <Package size={16} />
+          </div>
+          <span className="fw-bold">{successMsg}</span>
+        </div>
+      )}
+
+      {/* Content Section */}
       {loading ? (
-        <div className="text-center py-5">
-          <Loader className="animate-spin text-primary mx-auto mb-2" />
-          <p className="text-muted small">Loading warehouses...</p>
+        <div className="d-flex flex-column align-items-center justify-content-center py-5">
+          <div className="spinner-grow text-primary mb-3" role="status"></div>
+          <p className="text-muted fw-medium">Loading warehouse network...</p>
         </div>
       ) : warehouses.length === 0 ? (
-        <div className="text-center py-5 text-muted">
-          <Package size={48} className="mb-3 opacity-50" />
-          <p>No warehouses found. Click "Register Warehouse" to add one.</p>
+        <div className="text-center py-5 bg-white rounded-4 border-dashed border-2 shadow-sm">
+          <Building2 size={64} className="mb-3 text-muted opacity-25" />
+          <h3 className="fw-bold">No Warehouses Registered</h3>
+          <p className="text-muted">Start by adding your first distribution center to manage stock.</p>
+          <button className="btn btn-primary mt-2 px-4" onClick={openAddModal}>Register Warehouse</button>
         </div>
       ) : (
-        /* Warehouse Cards */
         <div className="row g-4">
           {warehouses.map(wh => {
             const util = getUtilization(wh);
-            const color = getUtilColor(util);
+            const utilColor = getUtilColor(util);
+            const utilBg = getUtilBg(util);
             return (
               <div className="col-md-6 col-lg-4" key={wh.warehouseId}>
-                <div className="card border-0 shadow-sm h-100">
-                  <div className="card-body">
-                    {/* Header */}
-                    <div className="d-flex justify-content-between align-items-start mb-2">
+                <div className="card border-0 shadow-sm h-100 transition-hover" 
+                  style={{ borderRadius: '20px', overflow: 'hidden', transition: 'all 0.3s ease' }}>
+                  
+                  {/* Card Body */}
+                  <div className="card-body p-4">
+                    <div className="d-flex justify-content-between align-items-start mb-3">
                       <div>
-                        <h5 className="card-title fw-bold mb-0">{wh.name}</h5>
-                        <p className="text-muted small mb-0 mt-1">{wh.location}</p>
+                        <h4 className="fw-bold mb-1" style={{ color: '#1e293b' }}>{wh.name}</h4>
+                        <div className="d-flex align-items-center gap-1 text-muted small">
+                          <MapPin size={14} /> {wh.location}
+                        </div>
                       </div>
-                      <span className={`badge ${wh.isActive !== false ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary'} rounded-pill`}>
-                        {wh.isActive !== false ? 'Active' : 'Inactive'}
+                      <span className={`badge ${wh.isActive ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary'} rounded-pill px-3 py-2`}>
+                        {wh.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </div>
 
-                    {/* Address */}
-                    {wh.address && <p className="small text-muted mb-3">{wh.address}</p>}
+                    <p className="text-secondary small mb-4" style={{ minHeight: '40px' }}>{wh.address}</p>
 
-                    {/* Capacity Bar */}
-                    <div className="mb-3">
-                      <div className="d-flex justify-content-between small mb-1">
-                        <span className="text-muted">Capacity Utilization</span>
-                        <span className={`fw-bold text-${color}`}>{util}%</span>
+                    {/* Utilization Progress */}
+                    <div className="mb-4">
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <span className="small fw-bold text-muted text-uppercase">Capacity Usage</span>
+                        <span className={`fw-bold ${utilColor}`}>{util}%</span>
                       </div>
-                      <div className="progress" style={{ height: '8px' }}>
-                        <div className={`progress-bar bg-${color}`} style={{ width: `${util}%` }}></div>
+                      <div className="progress rounded-pill shadow-inner" style={{ height: '10px', backgroundColor: '#f1f5f9' }}>
+                        <div className={`progress-bar rounded-pill ${utilBg}`} 
+                          style={{ width: `${util}%`, transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)' }}></div>
                       </div>
-                      <div className="small text-muted mt-1">
-                        {(wh.usedCapacity || 0).toLocaleString()} / {(wh.capacity || 0).toLocaleString()} units
+                      <div className="d-flex justify-content-between mt-2 small">
+                        <span className="text-muted">{(wh.usedCapacity || 0).toLocaleString()} items stored</span>
+                        <span className="fw-medium">Max: {(wh.capacity || 0).toLocaleString()}</span>
                       </div>
                     </div>
 
-                    {/* Info */}
-                    {wh.phone && (
-                      <div className="small mb-2">
-                        <span className="text-muted">Phone: </span>
-                        <span className="fw-medium">{wh.phone}</span>
+                    {/* Info Grid */}
+                    <div className="row g-2 mb-4 bg-light p-3 rounded-4">
+                      <div className="col-6">
+                        <div className="d-flex align-items-center gap-2 small text-muted">
+                          <Phone size={14} /> <span>{wh.phone || 'N/A'}</span>
+                        </div>
                       </div>
-                    )}
-                    <div className="small mb-3">
-                      <span className="text-muted">Manager ID: </span>
-                      <span className="fw-medium">{wh.managerId}</span>
+                      <div className="col-6 text-end">
+                        <div className="d-flex align-items-center justify-content-end gap-2 small text-muted">
+                          <User size={14} /> <span>Manager: {wh.managerId}</span>
+                        </div>
+                      </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="d-flex gap-2 pt-3 border-top">
-                      <button className="btn btn-sm btn-outline-primary flex-grow-1 d-flex align-items-center justify-content-center gap-1"
+                    {/* Action Bar */}
+                    <div className="d-flex gap-2">
+                      <button className="btn btn-indigo flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2"
+                        style={{ borderRadius: '12px', backgroundColor: '#eff6ff', color: '#2563eb', border: 'none', fontWeight: '600' }}
                         onClick={() => openStockView(wh)}>
-                        <Package size={14} /> View Stock
+                        <Package size={16} /> View Stock
                       </button>
-                      <button className="btn btn-sm btn-outline-secondary" title="Transfer From" onClick={() => openTransferModal(wh.warehouseId)}>
-                        <ArrowRightLeft size={14} />
+                      <button className="btn btn-light shadow-sm border-0 p-2" 
+                        style={{ borderRadius: '12px', width: '42px', height: '42px' }}
+                        title="Edit" onClick={() => openEditModal(wh)}>
+                        <Edit size={18} className="text-secondary" />
                       </button>
-                      <button className="btn btn-sm btn-light" title="Edit" onClick={() => openEditModal(wh)}>
-                        <Edit size={15} className="text-secondary" />
-                      </button>
-                      <button className="btn btn-sm btn-light" title="Delete"
-                        onClick={() => { setDeleteTarget(wh); setShowDeleteModal(true); }}>
-                        <Trash2 size={15} className="text-danger" />
+                      <button className="btn btn-light shadow-sm border-0 p-2" 
+                        style={{ borderRadius: '12px', width: '42px', height: '42px' }}
+                        title="Delete" onClick={() => { setDeleteTarget(wh); setShowDeleteModal(true); }}>
+                        <Trash2 size={18} className="text-danger" />
                       </button>
                     </div>
                   </div>
@@ -304,82 +367,65 @@ const WarehousesPage = () => {
         </div>
       )}
 
-      {/* ===== ADD/EDIT MODAL ===== */}
-      {showModal && (
-        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={closeModal}>
-          <div className="modal-dialog modal-dialog-centered" onClick={e => e.stopPropagation()}>
-            <div className="modal-content border-0 shadow">
-              <div className="modal-header border-0 pb-0">
-                <h5 className="modal-title fw-bold">
-                  {modalMode === 'add' ? '🏭 Register New Warehouse' : '✏️ Edit Warehouse'}
-                </h5>
-                <button className="btn btn-sm btn-light rounded-circle" onClick={closeModal}><X size={18} /></button>
-              </div>
-              <div className="modal-body pt-2">
-                {formErrors._server && <div className="alert alert-danger small py-2 mb-3">{formErrors._server}</div>}
-                {renderField('Warehouse Name', 'name', 'text', 'e.g. Main Distribution Center', true)}
-                {renderField('Location (City)', 'location', 'text', 'e.g. New York, NY', true)}
-                {renderField('Full Address', 'address', 'text', 'e.g. 123 Warehouse Ave, NY 10001', true)}
-                <div className="row">
-                  <div className="col-md-6">{renderField('Capacity (units)', 'capacity', 'number', '1000', true)}</div>
-                  <div className="col-md-6">{renderField('Manager ID', 'managerId', 'number', '1')}</div>
-                </div>
-                {renderField('Phone', 'phone', 'text', '+1 555-0123')}
-              </div>
-              <div className="modal-footer border-0 pt-0">
-                <button className="btn btn-light" onClick={closeModal}>Cancel</button>
-                <button className="btn btn-primary d-flex align-items-center gap-2" onClick={handleSave} disabled={saving}>
-                  {saving ? <><Loader size={16} className="animate-spin" /> Saving...</> : modalMode === 'add' ? 'Register Warehouse' : 'Save Changes'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ===== STOCK VIEW MODAL ===== */}
+      {/* ===== STOCK VIEW MODAL (Redesigned) ===== */}
       {showStockModal && stockWarehouse && (
-        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={() => setShowStockModal(false)}>
-          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" onClick={e => e.stopPropagation()}>
-            <div className="modal-content border-0 shadow">
-              <div className="modal-header border-0">
-                <div>
-                  <h5 className="modal-title fw-bold">📦 Stock Levels — {stockWarehouse.name}</h5>
-                  <p className="text-muted small mb-0">{stockWarehouse.location}</p>
+        <div className="modal fade show d-block" style={{ backdropFilter: 'blur(10px)', backgroundColor: 'rgba(15, 23, 42, 0.4)' }} onClick={() => setShowStockModal(false)}>
+          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '24px' }} onClick={e => e.stopPropagation()}>
+              <div className="modal-header border-0 p-4 pb-0">
+                <div className="d-flex align-items-center gap-3">
+                  <div className="p-3 rounded-4 bg-primary text-white">
+                    <Package size={24} />
+                  </div>
+                  <div>
+                    <h5 className="modal-title fw-bold h4 mb-0">Stock Levels</h5>
+                    <p className="text-muted small mb-0">{stockWarehouse.name} — {stockWarehouse.location}</p>
+                  </div>
                 </div>
-                <button className="btn btn-sm btn-light rounded-circle" onClick={() => setShowStockModal(false)}><X size={18} /></button>
+                <button className="btn btn-light rounded-circle shadow-sm" onClick={() => setShowStockModal(false)}><X size={20} /></button>
               </div>
-              <div className="modal-body p-0">
+              <div className="modal-body p-4 pt-4">
                 {stockLoading ? (
                   <div className="text-center py-5">
-                    <Loader className="animate-spin text-primary" /><p className="text-muted small mt-2">Loading stock data...</p>
+                    <div className="spinner-border text-primary" role="status"></div>
+                    <p className="text-muted mt-3 fw-medium">Analyzing inventory records...</p>
                   </div>
                 ) : stockItems.length === 0 ? (
-                  <div className="text-center py-5 text-muted">
-                    <Package size={40} className="mb-2 opacity-50" /><p>No stock records found for this warehouse.</p>
+                  <div className="text-center py-5 bg-light rounded-4 border-dashed">
+                    <Package size={48} className="mb-3 text-muted opacity-25" />
+                    <h5 className="fw-bold">No Stock Found</h5>
+                    <p className="text-muted small mb-0">This warehouse currently has no inventory recorded.</p>
                   </div>
                 ) : (
-                  <div className="table-responsive">
+                  <div className="table-responsive rounded-4 border">
                     <table className="table table-hover align-middle mb-0">
-                      <thead className="table-light">
-                        <tr>
-                          <th className="ps-4">Product ID</th>
+                      <thead className="bg-light">
+                        <tr className="small text-uppercase fw-bold text-muted">
+                          <th className="ps-4 py-3">Product Information</th>
                           <th className="text-end">Quantity</th>
-                          <th className="text-end">Reserved</th>
-                          <th className="text-end">Available</th>
-                          <th>Location</th>
-                          <th className="pe-4">Last Updated</th>
+                          <th className="text-end">Status</th>
+                          <th className="text-end pe-4">Last Updated</th>
                         </tr>
                       </thead>
                       <tbody>
                         {stockItems.map((item, i) => (
                           <tr key={i}>
-                            <td className="ps-4 fw-medium text-primary font-monospace">PROD-{item.productId}</td>
-                            <td className="text-end font-monospace fw-bold">{item.quantity}</td>
-                            <td className="text-end font-monospace text-warning">{item.reservedQuantity}</td>
-                            <td className="text-end font-monospace text-success fw-bold">{item.availableQuantity}</td>
-                            <td className="text-muted small">{item.location || '—'}</td>
-                            <td className="pe-4 text-muted small">{item.lastUpdated ? new Date(item.lastUpdated).toLocaleDateString() : '—'}</td>
+                            <td className="ps-4">
+                              <div className="fw-bold">{getProductName(item.productId)}</div>
+                              <div className="text-muted small font-monospace">ID: {item.productId}</div>
+                            </td>
+                            <td className="text-end fw-bold">{item.quantity.toLocaleString()}</td>
+                            <td className="text-end">
+                              <div className="d-flex flex-column align-items-end">
+                                <span className={`badge ${item.availableQuantity > 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} rounded-pill mb-1`}>
+                                  {item.availableQuantity > 0 ? 'In Stock' : 'Out of Stock'}
+                                </span>
+                                {item.reservedQuantity > 0 && <span className="small text-warning" style={{ fontSize: '10px' }}>{item.reservedQuantity} Reserved</span>}
+                              </div>
+                            </td>
+                            <td className="pe-4 text-end text-muted small">
+                              {item.lastUpdated ? new Date(item.lastUpdated).toLocaleDateString() : '—'}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -387,97 +433,163 @@ const WarehousesPage = () => {
                   </div>
                 )}
               </div>
-              <div className="modal-footer border-0">
-                <span className="text-muted small me-auto">{stockItems.length} stock record(s)</span>
-                <button className="btn btn-light" onClick={() => setShowStockModal(false)}>Close</button>
+              <div className="modal-footer border-0 p-4 pt-0">
+                <div className="me-auto text-muted small">Showing {stockItems.length} categories</div>
+                <button className="btn btn-light px-4 py-2 fw-bold" style={{ borderRadius: '12px' }} onClick={() => setShowStockModal(false)}>Close</button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* ===== STOCK TRANSFER MODAL ===== */}
-      {showTransferModal && (
-        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={() => setShowTransferModal(false)}>
-          <div className="modal-dialog modal-dialog-centered" onClick={e => e.stopPropagation()}>
-            <div className="modal-content border-0 shadow">
-              <div className="modal-header border-0">
-                <h5 className="modal-title fw-bold">🔄 Transfer Stock</h5>
-                <button className="btn btn-sm btn-light rounded-circle" onClick={() => setShowTransferModal(false)}><X size={18} /></button>
+      {/* ===== ADD/EDIT MODAL (Redesigned) ===== */}
+      {showModal && (
+        <div className="modal fade show d-block" style={{ backdropFilter: 'blur(10px)', backgroundColor: 'rgba(15, 23, 42, 0.4)' }} onClick={closeModal}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '24px' }} onClick={e => e.stopPropagation()}>
+              <div className="modal-header border-0 p-4">
+                <h5 className="modal-title fw-bold h4">
+                  {modalMode === 'add' ? '🏭 New Location' : '✏️ Edit Location'}
+                </h5>
+                <button className="btn btn-light rounded-circle shadow-sm" onClick={closeModal}><X size={20} /></button>
               </div>
-              <div className="modal-body pt-2">
+              <div className="modal-body p-4 pt-0">
                 <div className="mb-3">
-                  <label className="form-label small fw-bold text-secondary">Source Warehouse</label>
-                  <select className="form-select" value={transferData.fromWarehouseId} 
-                    onChange={e => setTransferData({...transferData, fromWarehouseId: e.target.value})}>
+                  <label className="form-label small fw-bold text-muted text-uppercase">Warehouse Name</label>
+                  <input type="text" className="form-control form-control-lg border-light bg-light" name="name" 
+                    value={formData.name} onChange={handleInputChange} style={{ borderRadius: '12px' }} placeholder="e.g. Northern Hub" />
+                </div>
+                <div className="row g-3 mb-3">
+                  <div className="col-md-6">
+                    <label className="form-label small fw-bold text-muted text-uppercase">City</label>
+                    <input type="text" className="form-control border-light bg-light" name="location" 
+                      value={formData.location} onChange={handleInputChange} style={{ borderRadius: '12px' }} placeholder="e.g. Mumbai" />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label small fw-bold text-muted text-uppercase">Capacity</label>
+                    <input type="number" className="form-control border-light bg-light" name="capacity" 
+                      value={formData.capacity} onChange={handleInputChange} style={{ borderRadius: '12px' }} placeholder="10000" />
+                  </div>
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small fw-bold text-muted text-uppercase">Address</label>
+                  <textarea className="form-control border-light bg-light" name="address" rows="2"
+                    value={formData.address} onChange={handleInputChange} style={{ borderRadius: '12px' }} placeholder="Street details..."></textarea>
+                </div>
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <label className="form-label small fw-bold text-muted text-uppercase">Manager ID</label>
+                    <input type="text" className="form-control border-light bg-light" name="managerId" 
+                      value={formData.managerId} onChange={handleInputChange} style={{ borderRadius: '12px' }} placeholder="101" />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label small fw-bold text-muted text-uppercase">Phone</label>
+                    <input type="text" className="form-control border-light bg-light" name="phone" 
+                      value={formData.phone} onChange={handleInputChange} style={{ borderRadius: '12px' }} placeholder="+91..." />
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer border-0 p-4">
+                <button className="btn btn-light px-4 py-2 fw-bold" style={{ borderRadius: '12px' }} onClick={closeModal}>Cancel</button>
+                <button className="btn btn-primary px-4 py-2 fw-bold shadow-sm" 
+                  style={{ borderRadius: '12px', backgroundColor: '#4f46e5' }}
+                  onClick={handleSave} disabled={saving}>
+                  {saving ? 'Processing...' : modalMode === 'add' ? 'Register' : 'Save Changes'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== TRANSFER MODAL (Redesigned) ===== */}
+      {showTransferModal && (
+        <div className="modal fade show d-block" style={{ backdropFilter: 'blur(10px)', backgroundColor: 'rgba(15, 23, 42, 0.4)' }} onClick={() => setShowTransferModal(false)}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '24px' }} onClick={e => e.stopPropagation()}>
+              <div className="modal-header border-0 p-4">
+                <h5 className="modal-title fw-bold h4">🔄 Transfer Stock</h5>
+                <button className="btn btn-light rounded-circle shadow-sm" onClick={() => setShowTransferModal(false)}><X size={20} /></button>
+              </div>
+              <div className="modal-body p-4 pt-0">
+                <div className="mb-3">
+                  <label className="form-label small fw-bold text-muted text-uppercase">Source Warehouse</label>
+                  <select className="form-select form-select-lg border-light bg-light" 
+                    value={transferData.fromWarehouseId}
+                    onChange={e => setTransferData({ ...transferData, fromWarehouseId: e.target.value })}
+                    style={{ borderRadius: '12px' }}>
                     <option value="">Select source...</option>
                     {warehouses.map(wh => <option key={wh.warehouseId} value={wh.warehouseId}>{wh.name}</option>)}
                   </select>
                 </div>
                 <div className="mb-3">
-                  <label className="form-label small fw-bold text-secondary">Destination Warehouse</label>
-                  <select className="form-select" value={transferData.toWarehouseId} 
-                    onChange={e => setTransferData({...transferData, toWarehouseId: e.target.value})}>
+                  <label className="form-label small fw-bold text-muted text-uppercase">Destination Warehouse</label>
+                  <select className="form-select form-select-lg border-light bg-light" 
+                    value={transferData.toWarehouseId}
+                    onChange={e => setTransferData({ ...transferData, toWarehouseId: e.target.value })}
+                    style={{ borderRadius: '12px' }}>
                     <option value="">Select destination...</option>
                     {warehouses.map(wh => (
                       wh.warehouseId != transferData.fromWarehouseId && <option key={wh.warehouseId} value={wh.warehouseId}>{wh.name}</option>
                     ))}
                   </select>
                 </div>
-                <div className="row">
-                  <div className="col-md-7">
-                    <div className="mb-3">
-                      <label className="form-label small fw-bold text-secondary">Product ID</label>
-                      <input type="number" className="form-control" placeholder="Enter Product ID"
-                        value={transferData.productId} onChange={e => setTransferData({...transferData, productId: e.target.value})} />
-                    </div>
+                <div className="row g-3">
+                  <div className="col-md-8">
+                    <label className="form-label small fw-bold text-muted text-uppercase">Product</label>
+                    <select className="form-select border-light bg-light" 
+                      value={transferData.productId}
+                      onChange={e => setTransferData({ ...transferData, productId: e.target.value })}
+                      style={{ borderRadius: '12px' }}>
+                      <option value="">Choose product...</option>
+                      {allProducts.map(p => <option key={p.productId} value={p.productId}>{p.name} (ID: {p.productId})</option>)}
+                    </select>
                   </div>
-                  <div className="col-md-5">
-                    <div className="mb-3">
-                      <label className="form-label small fw-bold text-secondary">Quantity</label>
-                      <input type="number" className="form-control" min="1"
-                        value={transferData.quantity} onChange={e => setTransferData({...transferData, quantity: e.target.value})} />
-                    </div>
+                  <div className="col-md-4">
+                    <label className="form-label small fw-bold text-muted text-uppercase">Quantity</label>
+                    <input type="number" className="form-control border-light bg-light" min="1"
+                      value={transferData.quantity} 
+                      onChange={e => setTransferData({ ...transferData, quantity: e.target.value })}
+                      style={{ borderRadius: '12px' }} />
                   </div>
                 </div>
               </div>
-              <div className="modal-footer border-0 pt-0">
-                <button className="btn btn-light" onClick={() => setShowTransferModal(false)}>Cancel</button>
-                <button className="btn btn-primary d-flex align-items-center gap-2" onClick={handleTransfer} disabled={transfering}>
-                  {transfering ? <><Loader size={16} className="animate-spin" /> Transferring...</> : 'Execute Transfer'}
+              <div className="modal-footer border-0 p-4">
+                <button className="btn btn-light px-4 py-2 fw-bold" style={{ borderRadius: '12px' }} onClick={() => setShowTransferModal(false)}>Cancel</button>
+                <button className="btn btn-primary px-4 py-2 fw-bold shadow-sm" 
+                  style={{ borderRadius: '12px', backgroundColor: '#4f46e5' }}
+                  onClick={handleTransfer} disabled={transfering}>
+                  {transfering ? 'Transferring...' : 'Execute Transfer'}
                 </button>
               </div>
             </div>
           </div>
         </div>
       )}
-
-      {/* ===== DELETE MODAL ===== */}
+      
+      {/* ===== DELETE MODAL (Redesigned) ===== */}
       {showDeleteModal && deleteTarget && (
-        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={() => setShowDeleteModal(false)}>
-          <div className="modal-dialog modal-dialog-centered modal-sm" onClick={e => e.stopPropagation()}>
-            <div className="modal-content border-0 shadow">
-              <div className="modal-body text-center py-4">
-                <div className="mb-3">
-                  <div className="bg-danger-subtle rounded-circle d-inline-flex align-items-center justify-content-center" style={{ width: '64px', height: '64px' }}>
-                    <Trash2 size={28} className="text-danger" />
-                  </div>
+        <div className="modal fade show d-block" style={{ backdropFilter: 'blur(5px)', backgroundColor: 'rgba(15, 23, 42, 0.4)' }} onClick={() => setShowDeleteModal(false)}>
+          <div className="modal-dialog modal-dialog-centered modal-sm">
+            <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '20px' }} onClick={e => e.stopPropagation()}>
+              <div className="modal-body text-center p-4">
+                <div className="p-3 bg-danger-subtle text-danger rounded-circle d-inline-flex mb-3">
+                  <Trash2 size={32} />
                 </div>
                 <h5 className="fw-bold mb-2">Delete Warehouse?</h5>
-                <p className="text-muted small mb-0">
-                  Are you sure you want to delete <strong>"{deleteTarget.name}"</strong>? This will deactivate it.
-                </p>
-              </div>
-              <div className="modal-footer border-0 justify-content-center pt-0 gap-2">
-                <button className="btn btn-light px-4" onClick={() => setShowDeleteModal(false)}>Cancel</button>
-                <button className="btn btn-danger px-4 d-flex align-items-center gap-2" onClick={handleDelete} disabled={deleting}>
-                  {deleting ? <><Loader size={16} className="animate-spin" /> Deleting...</> : 'Delete'}
-                </button>
+                <p className="text-muted small">This action will remove <strong>{deleteTarget.name}</strong> from the active network.</p>
+                <div className="d-flex gap-2 mt-4">
+                  <button className="btn btn-light flex-grow-1" style={{ borderRadius: '10px' }} onClick={() => setShowDeleteModal(false)}>Cancel</button>
+                  <button className="btn btn-danger flex-grow-1" style={{ borderRadius: '10px' }} onClick={handleDelete} disabled={deleting}>
+                    {deleting ? '...' : 'Delete'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
+      
     </div>
   );
 };

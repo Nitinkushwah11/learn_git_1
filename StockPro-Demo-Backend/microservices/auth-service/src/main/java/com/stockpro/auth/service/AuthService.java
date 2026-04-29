@@ -26,5 +26,7 @@ public interface AuthService {
 
     void deactivateUser(Long id);
 
+    void deleteUser(Long id);
+
     List<User> getAllUsers();
 }

@@ -12,10 +12,10 @@ const Sidebar = () => {
   const canAccessReports = ['ADMIN', 'MANAGER'].includes(userRole);
 
   return (
-    <div className="sidebar py-4 d-flex flex-column">
-      <div className="text-center mb-4">
-        <h3 className="fw-bold m-0 text-white">StockPro</h3>
-        <span className="small text-muted" style={{ opacity: 0.6 }}>Inventory System</span>
+    <div className="sidebar py-3 d-flex flex-column">
+      <div className="px-4 mb-4 mt-2">
+        <h4 className="fw-bold m-0 text-white tracking-tight">StockPro</h4>
+        <span className="small text-muted" style={{ fontSize: '11px', opacity: 0.6, letterSpacing: '0.5px' }}>INVENTORY SYSTEM</span>
       </div>
       
       <ul className="nav flex-column mb-auto">

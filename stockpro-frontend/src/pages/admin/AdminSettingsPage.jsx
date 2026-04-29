@@ -120,6 +120,18 @@ const AdminSettingsPage = () => {
     } catch (err) { setErrorMsg('Deactivation failed'); }
   };
 
+  const handleDeleteUser = async (id) => {
+    if (!window.confirm('PERMANENTLY DELETE this user? This cannot be undone.')) return;
+    try {
+      await authService.deleteUser(id);
+      setSuccessMsg('User permanently deleted');
+      fetchUsers();
+    } catch (err) { 
+      const msg = err.response?.data?.error || err.response?.data?.message || 'Deletion failed';
+      setErrorMsg(msg); 
+    }
+  };
+
   return (
     <div className="container-fluid py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -295,9 +307,14 @@ const AdminSettingsPage = () => {
                             </span>
                           </td>
                           <td className="text-end px-4">
-                            {user.active && (
-                              <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeactivate(user.userId)}>Deactivate</button>
-                            )}
+                            <div className="d-flex justify-content-end gap-2">
+                              {user.active && (
+                                <button className="btn btn-sm btn-outline-warning" onClick={() => handleDeactivate(user.userId)}>Deactivate</button>
+                              )}
+                              {currentUser.userId !== user.userId && (
+                                <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeleteUser(user.userId)}>Delete</button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))}

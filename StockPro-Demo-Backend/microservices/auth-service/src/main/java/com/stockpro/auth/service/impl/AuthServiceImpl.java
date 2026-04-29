@@ -119,6 +119,14 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    public void deleteUser(Long id) {
+        if (!repo.existsById(id)) {
+            throw new RuntimeException("User not found with id: " + id);
+        }
+        repo.deleteById(id);
+    }
+
+    @Override
     public List<User> getAllUsers() {
         return repo.findAll();
     }

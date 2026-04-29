@@ -72,4 +72,11 @@ public class AuthResource {
         service.deactivateUser(id);
         return ResponseEntity.ok().build();
     }
+
+    @DeleteMapping("/users/{id}")
+    @Operation(summary = "Permanently delete a user account")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        service.deleteUser(id);
+        return ResponseEntity.noContent().build();
+    }
 }

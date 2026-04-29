@@ -39,7 +39,7 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-light bg-white px-4 py-3 border-bottom">
+    <nav className="navbar navbar-expand-lg navbar-light bg-white px-4 py-2 border-bottom shadow-sm">
       <div className="container-fluid">
         <span className="navbar-brand mb-0 h1 fw-bold text-primary d-lg-none">StockPro</span>
         

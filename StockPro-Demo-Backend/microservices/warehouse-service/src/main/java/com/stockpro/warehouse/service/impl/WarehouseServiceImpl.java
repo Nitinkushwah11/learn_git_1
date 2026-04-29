@@ -169,7 +169,7 @@ public class WarehouseServiceImpl implements WarehouseService {
         StockLevel source = stockLevelRepository
                 .findByWarehouseIdAndProductId(request.getFromWarehouseId(), request.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "No stock at source warehouseId=" + request.getFromWarehouseId()));
+                        "Insufficient stock: The selected product is not available in the source warehouse (Warehouse ID: " + request.getFromWarehouseId() + ")."));
 
         int available = source.getQuantity() - source.getReservedQuantity();
         if (available < request.getQuantity()) {

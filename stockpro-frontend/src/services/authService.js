@@ -60,5 +60,10 @@ export const authService = {
     deactivateUser: async (userId) => {
         const response = await authApi.put(`/auth/deactivate/${userId}`);
         return response.data;
+    },
+
+    deleteUser: async (userId) => {
+        const response = await authApi.delete(`/auth/users/${userId}`);
+        return response.data;
     }
 };
